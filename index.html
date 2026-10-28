@@ -90,7 +90,7 @@ function explWithHint(q){
 }
 function hintBlock(q){
   if(!q.hint)return '';
-  return `<div class="hint-box"><div class="hint-h">💡 覚え方のヒント</div><p class="hint-b">${esc(q.hint)}</p></div>`;
+  return `<div class="hint-box"><div class="hint-h">💡 ポイント・覚え方</div><p class="hint-b">${esc(q.hint)}</p></div>`;
 }
 function photoBlock(q){
   if(!q.photo||!q.photo.src)return '';
