@@ -98,7 +98,12 @@ function photoBlock(q){
   return `<div class="expl-photo"><img src="${esc(p.src)}" alt="${esc(p.caption||'')}" loading="lazy" decoding="async" width="560"><p class="expl-cap">${esc(p.caption||'')}</p><p class="expl-cred">出典: <a href="${esc(p.source)}" target="_blank" rel="noopener noreferrer">Wikimedia Commons</a> — ${esc(p.credit||'')}</p></div>`;
 }
 
-function fmt(s){return esc(s).replace(/&lt;u&gt;/g,'<u>').replace(/&lt;\/u&gt;/g,'</u>');}
+function fmt(s){
+  return esc(s)
+    .replace(/&lt;u&gt;/g,'<u>').replace(/&lt;\/u&gt;/g,'</u>')
+    .replace(/&lt;a href=&quot;(https:\/\/laws\.e-gov\.go\.jp\/[^&]*?)&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;/g,'<a href="$1" target="_blank" rel="noopener noreferrer">')
+    .replace(/&lt;\/a&gt;/g,'</a>');
+}
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 let S=null; // session
 function chStats(no){let seen=0,ok=0;QUESTIONS.forEach(q=>{if(q.chapter===no){const s=store.stats[q.id];if(s){seen++;if(s.last)ok++;}}});return {seen,ok};}
