@@ -73,11 +73,11 @@ const QUESTIONS = [{"id":"1-1","chapter":1,"chapter_name":"農薬関係法令","
 const CHAPTERS = (function(){const m={};QUESTIONS.forEach(q=>{if(!m[q.chapter])m[q.chapter]={no:q.chapter,name:q.chapter_name,count:0};m[q.chapter].count++;});return Object.values(m).sort((a,b)=>a.no-b.no);})();
 const KEY='midori_quiz_v1';
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return {};}}
-let store=load(); store.wrong=store.wrong||{}; store.stats=store.stats||{}; store.exams=store.exams||[]; store.sel=store.sel||CHAPTERS.map(c=>c.no); if(store.shuffle===undefined)store.shuffle=true; if(store.shuffleChoices===undefined)store.shuffleChoices=false;
+var store=load(); store.wrong=store.wrong||{}; store.stats=store.stats||{}; store.exams=store.exams||[]; store.sel=store.sel||CHAPTERS.map(c=>c.no); if(store.shuffle===undefined)store.shuffle=true; if(store.shuffleChoices===undefined)store.shuffleChoices=true;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
 const byId={};QUESTIONS.forEach(q=>byId[q.id]=q);
 const app=document.getElementById('app');
-const LET=['a','b','c','d'];
+var LET=['a','b','c','d'];
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function splitExpl(ex){
   if(!ex)return {body:'',konkyo:''};
@@ -85,11 +85,13 @@ function splitExpl(ex){
   if(i<0)return {body:ex,konkyo:''};
   return {body:ex.slice(0,i).replace(/\s+$/,''),konkyo:ex.slice(i)};
 }
-function explWithHint(q){
+function explWithHint(q, order){
   const sp=splitExpl(q.explanation||'');
-  let h=`<div class="expl">【解説】\n${fmt(sp.body)}</div>`;
+  const body=remapChoiceLetters(sp.body, order);
+  const konkyo=remapChoiceLetters(sp.konkyo, order);
+  let h=`<div class="expl">【解説】\n${fmt(body)}</div>`;
   h+=hintBlock(q);
-  if(sp.konkyo)h+=`<div class="expl" style="margin-top:8px">${fmt(sp.konkyo)}</div>`;
+  if(konkyo)h+=`<div class="expl" style="margin-top:8px">${fmt(konkyo)}</div>`;
   h+=photoBlock(q);
   return h;
 }
@@ -111,8 +113,32 @@ function fmt(s){
     .replace(/&lt;a href=&quot;(https:\/\/laws\.e-gov\.go\.jp\/[^&]*?)&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;/g,'<a href="$1" target="_blank" rel="noopener noreferrer">')
     .replace(/&lt;\/a&gt;/g,'</a>');
 }
+/** Strip answer-revealing markup from stem/choices (shown only in 解説). */
+function stripMarkup(s){
+  return String(s==null?'':s).replace(/<\/?(?:u|b|mark)(?:\s[^>]*)?>/gi,'');
+}
+function fmtStem(s){ return fmt(stripMarkup(s)); }
+/** Map original choice letters in explanation text to shuffled display letters. */
+function remapChoiceLetters(s, order){
+  if(!store.shuffleChoices || !order) return s;
+  const toDisp={}; order.forEach((orig,i)=>{ toDisp[orig]=LET[i]; });
+  const tags=[];
+  let t=String(s==null?'':s).replace(/<[^>]+>/g,m=>{tags.push(m);return '§T'+ (tags.length-1) +'§';});
+  const hold=L=>'§L'+L+'§';
+  t=t.replace(/(誤りは(?:下線部|太字部分))([a-d])(?=[\.．])/g,(_,p,L)=>p+hold(L));
+  t=t.replace(/(●)([a-d])(?=[\.．])/g,(_,p,L)=>p+hold(L));
+  t=t.replace(/(解答|正解は|正解[：:])([a-d])(?=[\s\.．、。\n]|$)/g,(_,p,L)=>p+hold(L));
+  t=t.replace(/(^|[^a-zA-Z0-9_§])([a-d])(?=[\.．、])/gm,(_,p,L)=>p+hold(L));
+  t=t.replace(/§L([a-d])§/g,(_,L)=>toDisp[L]||L);
+  t=t.replace(/§T(\d+)§/g,(_,i)=>tags[+i]);
+  return t;
+}
+function dispLetter(order, orig){
+  const i=order.indexOf(orig);
+  return i>=0?LET[i]:orig;
+}
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-let S=null; // session
+var S=null; // session
 function chStats(no){let seen=0,ok=0;QUESTIONS.forEach(q=>{if(q.chapter===no){const s=store.stats[q.id];if(s){seen++;if(s.last)ok++;}}});return {seen,ok};}
 function goHome(confirmLeave){
   if(confirmLeave&&S&&!S.done&&S.answered>0&&!confirm('中断してホームに戻りますか？（ここまでの間違いは記録済みです）'))return;
@@ -122,14 +148,16 @@ function goHome(confirmLeave){
   let h=`<div class="card"><h2>学習状況</h2><div class="stat"><div><b>${seen}/${QUESTIONS.length}</b>解いた問題</div><div><b>${seen?Math.round(okN/seen*100):0}%</b>直近正答率</div><div><b>${wrongN}</b>要復習</div></div></div>`;
   h+=`<div class="card"><h2>章を選択</h2><div class="row"><button class="btn sec" onclick="selAll(true)">全て選択</button><button class="btn sec" onclick="selAll(false)">全て解除</button></div><div class="chlist">`;
   CHAPTERS.forEach(c=>{const st=chStats(c.no);h+=`<label><input type="checkbox" class="chk" value="${c.no}" ${store.sel.includes(c.no)?'checked':''} onchange="updSel()"><span>${c.no}. ${esc(c.name)}</span><span class="meta">${st.ok}/${c.count}正解</span></label>`;});
-  h+=`</div><label class="opt"><input type="checkbox" id="optShuf" ${store.shuffle?'checked':''} onchange="store.shuffle=this.checked;save()">出題順をランダムにする</label>`;
-  h+=`<label class="opt"><input type="checkbox" id="optShufC" ${store.shuffleChoices?'checked':''} onchange="store.shuffleChoices=this.checked;save()">選択肢の順番もシャッフル</label>`;
-  h+=`<button class="btn" id="startBtn" onclick="startPractice()">選択した章を学習する（<span id="selN"></span>問）</button>`;
+  h+=`</div><button class="btn" id="startBtn" onclick="startPractice()">選択した章を学習する（<span id="selN"></span>問）</button>`;
   h+=`<button class="btn sec" onclick="startUnseen()">選択章の未回答の問題だけ</button></div>`;
   h+=`<div class="card"><h2>間違えた問題だけ復習</h2><p class="small">間違えた問題は自動で記録され、復習で正解すると一覧から外れます。</p><button class="btn" ${wrongN?'':'disabled'} onclick="startWrong()">間違えた問題だけ復習（${wrongN}問）</button></div>`;
   h+=`<div class="card"><h2>50問 模擬試験</h2><p class="small">全${QUESTIONS.length}問からランダムに50問出題。解説は最後にまとめて表示されます。</p><button class="btn" onclick="startExam()">模擬試験を開始する</button>`;
   if(store.exams.length){h+=`<div class="small">過去の結果：</div>`+store.exams.slice(-5).reverse().map(e=>`<div class="rev">${esc(e.date)}　<b>${e.score}/${e.total}</b>（${Math.round(e.score/e.total*100)}%）</div>`).join('');}
-  h+=`</div><div class="card"><button class="btn warn" onclick="resetAll()">学習記録をリセット</button><p class="small">記録はこの端末のブラウザ内（localStorage）に保存されます。</p></div>`;
+  h+=`</div><div class="card"><h2>設定</h2>
+<label class="opt"><input type="checkbox" id="optShuf" ${store.shuffle?'checked':''} onchange="store.shuffle=this.checked;save()">出題順をランダムにする</label>
+<label class="opt"><input type="checkbox" id="optShufC" ${store.shuffleChoices?'checked':''} onchange="store.shuffleChoices=this.checked;save()">選択肢をシャッフル</label>
+<p class="small">「選択肢をシャッフル」をオンにすると、毎回 a/b/c/d の位置が入れ替わり、位置だけで答えを覚えにくくなります（既定オン）。</p>
+</div><div class="card"><button class="btn warn" onclick="resetAll()">学習記録をリセット</button><p class="small">記録はこの端末のブラウザ内（localStorage）に保存されます。</p></div>`;
   app.innerHTML=h;updSel();window.scrollTo(0,0);
 }
 function selAll(v){document.querySelectorAll('.chk').forEach(c=>c.checked=v);updSel();}
@@ -156,19 +184,19 @@ function render(){
   if(S.mode==='exam')h+=`<div class="qmeta"><span class="timer" id="tm"></span></div>`;
   h+=`<div class="bar"><div style="width:${(S.i)/n*100}%"></div></div>`;
   h+=`<div class="qmeta"><span>第${q.chapter}章 ${esc(q.chapter_name)}</span><span>問題 ${esc(q.id)}（p.${q.printed_page}）</span></div>`;
-  h+=`<div class="qtext">${fmt(q.question)}</div>`;
+  h+=`<div class="qtext">${fmtStem(q.question)}</div>`;
   it.order.forEach((k,idx)=>{
     let cls='choice';
     if(it.picked&&S.mode!=='exam'){if(k===q.answer)cls+=' correct';else if(k===it.picked)cls+=' wrong';else cls+=' dim';}
     else if(it.picked&&S.mode==='exam'&&k===it.picked)cls+=' correct';
-    const lab=store.shuffleChoices?String(idx+1):k;
-    h+=`<button class="${cls}" ${it.picked&&S.mode!=='exam'?'disabled':''} onclick="pick('${k}')"><span class="lt">${lab}</span><span>${fmt(q.choices[k])}</span></button>`;
+    const lab=LET[idx];
+    h+=`<button class="${cls}" ${it.picked&&S.mode!=='exam'?'disabled':''} onclick="pick('${k}')"><span class="lt">${lab}</span><span>${fmtStem(q.choices[k])}</span></button>`;
   });
   if(it.picked&&S.mode!=='exam'){
     const ok=it.picked===q.answer;
-    const ansLab=store.shuffleChoices?(it.order.indexOf(q.answer)+1)+'（原本の'+q.answer+'）':q.answer;
-    h+=`<div class="fb ${ok?'ok':'ng'}">${ok?'⭕ 正解！':'❌ 不正解'}　正解：${ansLab}</div>`;
-    if(q.explanation||q.hint)h+=explWithHint(q);
+    const ansLab=dispLetter(it.order,q.answer);
+    h+=`<div class="fb ${ok?'ok':'ng'}">${ok?'⭕ 正解！':'❌ 不正解'}　正解：${ansLab}. ${fmtStem(q.choices[q.answer]||'')}</div>`;
+    if(q.explanation||q.hint)h+=explWithHint(q, it.order);
   }
   h+=`<div class="row">`;
   if(S.i>0)h+=`<button class="btn sec" onclick="move(-1)">← 前へ</button>`;
@@ -202,7 +230,9 @@ function finish(){
   if(wr.length)h+=`<button class="btn sec" onclick="retryList()">今回間違えた/未回答の${wr.length}問をもう一度</button>`;
   h+=`</div><div class="card"><h2>問題ごとの結果</h2>`;
   S.list.forEach((it,i)=>{const q=it.q,ok=it.picked===q.answer;
-    h+=`<div class="rev"><span class="${ok?'ok':'ng'}">${ok?'⭕':'❌'}</span> ${i+1}. [${esc(q.id)}] ${fmt(q.question)}<br>あなた：${it.picked?it.picked+'. '+fmt(q.choices[it.picked]):'未回答'}<br>正解：<b>${q.answer}. ${fmt(q.choices[q.answer]||'')}</b>`+(S.mode==='exam'&&q.explanation?`<details><summary>解説</summary>${explWithHint(q)}</details>`:'')+`</div>`;});
+    const pLab=it.picked?dispLetter(it.order,it.picked):null;
+    const aLab=dispLetter(it.order,q.answer);
+    h+=`<div class="rev"><span class="${ok?'ok':'ng'}">${ok?'⭕':'❌'}</span> ${i+1}. [${esc(q.id)}] ${fmtStem(q.question)}<br>あなた：${pLab?pLab+'. '+fmtStem(q.choices[it.picked]):'未回答'}<br>正解：<b>${aLab}. ${fmtStem(q.choices[q.answer]||'')}</b>`+(S.mode==='exam'&&q.explanation?`<details><summary>解説</summary>${explWithHint(q,it.order)}</details>`:'')+`</div>`;});
   h+=`</div>`;app.innerHTML=h;window.scrollTo(0,0);
 }
 function retryList(){const l=S.list.filter(it=>it.picked!==it.q.answer).map(it=>it.q);begin(l,'wrong','やり直し');}
