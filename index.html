@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#2e7d32">
 <link rel="icon" href="data:,">
 <title>緑の安全管理士（緑地・ゴルフ場分野） 問題集 復習アプリ</title>
@@ -98,9 +99,33 @@ u{text-decoration:underline;text-decoration-color:#c62828;text-decoration-thickn
 .btn.pause{background:#fff;color:#1565c0;border-color:#1565c0}
 .resume{border:2px solid #2e7d32}
 
+
+/* パスワード画面：解除前はアプリ本体を隠す */
+#pwgate{position:fixed;inset:0;z-index:100;background:#f1f6f0;display:flex;align-items:center;justify-content:center;padding:16px}
+#pwgate .pwbox{width:100%;max-width:390px;background:#fff;border-radius:12px;padding:24px 20px;box-shadow:0 1px 3px #0002}
+#pwgate h1{font-size:20px;margin:0 0 12px;color:#1b5e20;text-align:center;line-height:1.4}
+#pwgate p{margin:0 0 12px;text-align:center}
+#pwgate input{width:100%;min-height:52px;font-size:18px;padding:12px;border:2px solid #bbb;border-radius:10px;margin:4px 0 8px}
+#pwgate .pwerr{color:#c62828;font-weight:bold;min-height:1.5em;margin:0 0 8px;text-align:center}
+html.pwok #pwgate{display:none}
+html:not(.pwok) header,html:not(.pwok) main,html:not(.pwok) #textref-note{display:none}
 </style>
+<script>
+(function(){try{if(localStorage.getItem('midori_pw_ok')==='130322d32c42a4ed7dc84ab0eeb76edade54910d2f6ee7540af017158d562c65')document.documentElement.classList.add('pwok');}catch(e){}})();
+</script>
 </head>
 <body>
+<div id="pwgate" role="dialog" aria-labelledby="pwtitle" aria-modal="true">
+<div class="pwbox">
+<h1 id="pwtitle">緑の安全管理士 復習アプリ</h1>
+<p>パスワードを入れてください</p>
+<form id="pwform" autocomplete="off">
+<input id="pwinput" type="password" inputmode="text" autocomplete="off" aria-label="パスワード" autofocus>
+<p class="pwerr" id="pwerr"></p>
+<button type="submit" class="btn" id="pwbtn">開く</button>
+</form>
+</div>
+</div>
 <header><h1 id="htitle">緑の安全管理士（緑地・ゴルフ場分野） 問題集</h1><button id="homeBtn" class="hidden" onclick="goHome(true)">ホーム</button></header>
 <main id="app"></main>
 <script>
@@ -386,7 +411,76 @@ function finish(){
   h+=`</div>`;app.innerHTML=h;window.scrollTo(0,0);
 }
 function retryList(){const l=S.list.filter(it=>it.picked!==it.q.answer).map(it=>it.q);begin(l,'wrong','やり直し');}
-goHome();
+const PW_HASH='130322d32c42a4ed7dc84ab0eeb76edade54910d2f6ee7540af017158d562c65';
+const PW_KEY='midori_pw_ok';
+function sha256js(msg){
+  const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  function rotr(n,x){return (x>>>n)|(x<<(32-n));}
+  const bytes=[];
+  for(const ch of unescape(encodeURIComponent(msg))) bytes.push(ch.charCodeAt(0));
+  const l=bytes.length;
+  bytes.push(0x80);
+  while(bytes.length%64!==56) bytes.push(0);
+  const bitLenHi=Math.floor(l/Math.pow(2,29));
+  const bitLenLo=(l*8)>>>0;
+  bytes.push((bitLenHi>>>24)&255,(bitLenHi>>>16)&255,(bitLenHi>>>8)&255,bitLenHi&255);
+  bytes.push((bitLenLo>>>24)&255,(bitLenLo>>>16)&255,(bitLenLo>>>8)&255,bitLenLo&255);
+  let h0=0x6a09e667,h1=0xbb67ae85,h2=0x3c6ef372,h3=0xa54ff53a,h4=0x510e527f,h5=0x9b05688c,h6=0x1f83d9ab,h7=0x5be0cd19;
+  const w=new Array(64);
+  for(let i=0;i<bytes.length;i+=64){
+    for(let j=0;j<16;j++){const o=i+j*4;w[j]=(bytes[o]<<24)|(bytes[o+1]<<16)|(bytes[o+2]<<8)|bytes[o+3];}
+    for(let j=16;j<64;j++){
+      const s0=rotr(7,w[j-15])^rotr(18,w[j-15])^(w[j-15]>>>3);
+      const s1=rotr(17,w[j-2])^rotr(19,w[j-2])^(w[j-2]>>>10);
+      w[j]=(w[j-16]+s0+w[j-7]+s1)|0;
+    }
+    let a=h0,b=h1,c=h2,d=h3,e=h4,f=h5,g=h6,h=h7;
+    for(let j=0;j<64;j++){
+      const S1=rotr(6,e)^rotr(11,e)^rotr(25,e);
+      const ch=(e&f)^(~e&g);
+      const t1=(h+S1+ch+K[j]+w[j])|0;
+      const S0=rotr(2,a)^rotr(13,a)^rotr(22,a);
+      const maj=(a&b)^(a&c)^(b&c);
+      const t2=(S0+maj)|0;
+      h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+t2)|0;
+    }
+    h0=(h0+a)|0;h1=(h1+b)|0;h2=(h2+c)|0;h3=(h3+d)|0;h4=(h4+e)|0;h5=(h5+f)|0;h6=(h6+g)|0;h7=(h7+h)|0;
+  }
+  function hex(n){return (n>>>0).toString(16).padStart(8,'0');}
+  return hex(h0)+hex(h1)+hex(h2)+hex(h3)+hex(h4)+hex(h5)+hex(h6)+hex(h7);
+}
+function sha256hex(str){
+  if(window.crypto&&crypto.subtle){
+    return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(buf=>[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join(''));
+  }
+  return Promise.resolve(sha256js(str));
+}
+function unlockApp(){
+  try{localStorage.setItem(PW_KEY,PW_HASH);}catch(e){}
+  document.documentElement.classList.add('pwok');
+  goHome();
+}
+function alreadyUnlocked(){
+  try{return localStorage.getItem(PW_KEY)===PW_HASH;}catch(e){return false;}
+}
+function initPwGate(){
+  if(alreadyUnlocked()){
+    document.documentElement.classList.add('pwok');
+    goHome();
+    return;
+  }
+  const form=document.getElementById('pwform');
+  const input=document.getElementById('pwinput');
+  const err=document.getElementById('pwerr');
+  form.addEventListener('submit',async ev=>{
+    ev.preventDefault();
+    const h=await sha256hex(input.value||'');
+    if(h===PW_HASH){err.textContent='';unlockApp();}
+    else{err.textContent='パスワードが違います';input.focus();input.select();}
+  });
+  input.focus();
+}
+initPwGate();
 </script>
 <div id="textref-note" style="margin:16px 0;padding:12px 14px;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;font-size:13px;line-height:1.55;color:#555"><strong>教科書ページについて</strong>：解説の【根拠】に示す『農薬概説2026』のページ番号は、目次に記載された各節の開始ページです（当該節の本文の途中ページではありません）。第1章および第2章前半の目次は未反映のため、該当しうる箇所は「ページ未確認」と記すか従来の章立て参照のままです。</div>
 </body>
