@@ -132,6 +132,10 @@ header .test-badge{color:#fff;background:#ef6c00;border-color:#ffcc80;flex:none}
 .an-stem{margin:2px 0 4px;line-height:1.4}
 .an-q .an-meta{font-size:13px;color:#555}
 
+.flag-lab{display:flex;align-items:center;gap:10px;margin:10px 0;padding:10px 12px;background:#fff8e1;border:1px solid #ffe082;border-radius:10px;cursor:pointer;font-size:15px;line-height:1.4;color:#222}
+.flag-lab input{width:22px;height:22px;flex:none}
+.an-flag{margin-left:6px;font-size:14px}
+
 .intro{padding:12px 16px}
 .intro summary{cursor:pointer;font-size:18px;line-height:1.4}
 .intro-list{margin:8px 0 0;padding-left:1.25em;font-size:14px;color:#333;line-height:1.55}
@@ -161,7 +165,7 @@ const QUESTIONS = [{"id":"1-1","chapter":1,"chapter_name":"農薬関係法令","
 const CHAPTERS = (function(){const m={};QUESTIONS.forEach(q=>{if(!m[q.chapter])m[q.chapter]={no:q.chapter,name:q.chapter_name,count:0};m[q.chapter].count++;});return Object.values(m).sort((a,b)=>a.no-b.no);})();
 const KEY='midori_quiz_v1';
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return {};}}
-var store=load(); store.wrong=store.wrong||{}; store.stats=store.stats||{}; store.exams=store.exams||[]; store.sel=store.sel||CHAPTERS.map(c=>c.no); if(store.shuffle===undefined)store.shuffle=true; if(store.shuffleChoices===undefined)store.shuffleChoices=true;
+var store=load(); store.wrong=store.wrong||{}; store.stats=store.stats||{}; store.exams=store.exams||[]; store.sel=store.sel||CHAPTERS.map(c=>c.no); if(store.shuffle===undefined)store.shuffle=true; if(store.shuffleChoices===undefined)store.shuffleChoices=true; store.flagged=store.flagged||{}; if(!Array.isArray(store.lastSessionIds))store.lastSessionIds=[]; if(!store.lastSessionIds.length&&store.session&&Array.isArray(store.session.list))store.lastSessionIds=store.session.list.map(it=>it&&it.id).filter(Boolean);
 function save(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
 const byId={};QUESTIONS.forEach(q=>byId[q.id]=q);
 migrateStats();
@@ -297,9 +301,14 @@ function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor
 var S=null; // session
 var SESSION_VER=1;
 function sessionElapsed(){if(!S)return 0;return (S.elapsed||0)+(Date.now()-(S.start||Date.now()));}
+function rememberLastSession(list){
+  const ids=(list||[]).map(it=>it&&(it.id||(it.q&&it.q.id))).filter(Boolean);
+  if(ids.length)store.lastSessionIds=ids;
+}
 function sessionSave(){
   if(!S||S.done){if(store.session){delete store.session;save();}return;}
   store.session={v:SESSION_VER,mode:S.mode,title:S.title,i:S.i,correct:S.correct,answered:S.answered,elapsed:sessionElapsed(),list:S.list.map(it=>({id:it.q.id,order:it.order.slice(),picked:it.picked||null}))};
+  rememberLastSession(store.session.list);
   save();
 }
 function sessionClear(){delete store.session;save();}
@@ -338,7 +347,7 @@ function goHome(confirmLeave){
   }
   if(S&&!S.done)sessionSave();
   S=null;document.getElementById('homeBtn').classList.add('hidden');clearInterval(window._tm);
-  const wrongN=Object.keys(store.wrong).filter(id=>byId[id]).length;
+  const wrongN=reviewIds().length;
   const seen=Object.keys(store.stats).length; const okN=Object.values(store.stats).filter(s=>s.last).length;
   let h=``;
   const introOpen=(()=>{try{return localStorage.getItem('midori_intro_closed')!=='1';}catch(e){return true;}})();
@@ -351,8 +360,10 @@ function goHome(confirmLeave){
   h+=`<div class="card"><h2>章を選択</h2><div class="row"><button class="btn sec" onclick="selAll(true)">全て選択</button><button class="btn sec" onclick="selAll(false)">全て解除</button></div><div class="chlist">`;
   CHAPTERS.forEach(c=>{const st=chStats(c.no);h+=`<label><input type="checkbox" class="chk" value="${c.no}" ${store.sel.includes(c.no)?'checked':''} onchange="updSel()"><span>${c.no}. ${esc(c.name)}</span><span class="meta">${st.ok}/${c.count}正解</span></label>`;});
   h+=`</div><button class="btn" id="startBtn" onclick="startPractice()">選択した章を学習する（<span id="selN"></span>問）</button>`;
-  h+=`<button class="btn sec" onclick="startUnseen()">選択章の未回答の問題だけ</button></div>`;
-  h+=`<div class="card"><h2>間違えた問題だけ復習</h2><p class="small">間違えた問題は自動で記録され、復習で正解すると一覧から外れます。</p><button class="btn" ${wrongN?'':'disabled'} onclick="startWrong()">間違えた問題だけ復習（${wrongN}問）</button></div>`;
+  h+=`<button class="btn sec" onclick="startUnseen()">選択章の未回答の問題だけ</button>`;
+  const unasked=unaskedList();
+  h+=`<button class="btn sec" id="btnUnasked" onclick="startUnasked()">前回やらなかった問題を解く（${unasked.list.length}問）</button><p class="small">直前の学習で出た問題以外から出題します。まだ記録がないときは、未回答の問題（なければ全問）から出題します。</p></div>`;
+  h+=`<div class="card"><h2>間違えた問題だけ復習</h2><p class="small">間違えた問題は自動で記録され、復習で正解すると一覧から外れます。正解したあと「復習問題に追加」したものも含みます。</p><button class="btn" ${wrongN?'':'disabled'} onclick="startWrong()">間違えた問題だけ復習（${wrongN}問）</button></div>`;
   h+=`<div class="card"><h2>50問 模擬試験</h2><p class="small">全${QUESTIONS.length}問からランダムに50問出題。解説は最後にまとめて表示されます。</p><button class="btn" onclick="startExam()">模擬試験を開始する</button>`;
   if(store.exams.length){h+=`<div class="small">過去の結果：</div>`+store.exams.slice(-5).reverse().map(e=>`<div class="rev">${esc(e.date)}　<b>${e.score}/${e.total}</b>（${Math.round(e.score/e.total*100)}%）</div>`).join('');}
   h+=`</div><div class="card"><h2>📷 写真で学ぼう</h2><p class="small">農薬ラベル・毒物劇物のマーク・防護装備・散布機・ドリフトなどを、写真とイラストで確認できます。</p><button class="btn" onclick="showGallery()">写真で学ぶ</button><button class="btn sec" onclick="showCredits()">写真・イラストのクレジット</button></div><div class="card"><h2>設定</h2>
@@ -367,7 +378,7 @@ function goHome(confirmLeave){
 }
 function selAll(v){document.querySelectorAll('.chk').forEach(c=>c.checked=v);updSel();}
 function updSel(){store.sel=[...document.querySelectorAll('.chk')].filter(c=>c.checked).map(c=>+c.value);save();const n=QUESTIONS.filter(q=>store.sel.includes(q.chapter)).length;document.getElementById('selN').textContent=n;document.getElementById('startBtn').disabled=!n;}
-function resetAll(){if(confirm('学習記録・間違えた問題・模擬試験結果・途中保存をすべて消去しますか？')){store.wrong={};store.stats={};store.exams=[];sessionClear();goHome();}}
+function resetAll(){if(confirm('学習記録・間違えた問題・模擬試験結果・途中保存をすべて消去しますか？')){store.wrong={};store.stats={};store.exams=[];store.flagged={};store.lastSessionIds=[];sessionClear();goHome();}}
 function begin(list,mode,title){
   if(!list.length){alert('対象の問題がありません');return;}
   if(mode==='exam'||store.shuffle)list=shuffle(list);
@@ -377,7 +388,37 @@ function begin(list,mode,title){
 }
 function startPractice(){discardAnd(()=>begin(QUESTIONS.filter(q=>store.sel.includes(q.chapter)),'practice','章別学習'));}
 function startUnseen(){discardAnd(()=>begin(QUESTIONS.filter(q=>store.sel.includes(q.chapter)&&!store.stats[q.id]),'practice','未回答の問題'));}
-function startWrong(){discardAnd(()=>begin(QUESTIONS.filter(q=>store.wrong[q.id]),'wrong','間違えた問題の復習'));}
+function inReview(id){return !!(store.wrong&&store.wrong[id])||!!(store.flagged&&store.flagged[id]);}
+function reviewIds(){return QUESTIONS.filter(q=>inReview(q.id)).map(q=>q.id);}
+function toggleFlag(id,on){
+  store.flagged=store.flagged||{};
+  if(on)store.flagged[id]=1;
+  else delete store.flagged[id];
+  save();
+}
+function unaskedList(){
+  const last=store.lastSessionIds||[];
+  if(!last.length){
+    const unseen=QUESTIONS.filter(q=>!store.stats[q.id]);
+    return {fallback:true,list:unseen.length?unseen:QUESTIONS.slice(),unseen:unseen.length};
+  }
+  const skip=new Set(last);
+  return {fallback:false,list:QUESTIONS.filter(q=>!skip.has(q.id)),unseen:0};
+}
+function startUnasked(){
+  const u=unaskedList();
+  if(u.fallback){
+    const msg=u.unseen
+      ? '直前の学習で出た問題の記録がまだありません。まだ解いていない問題（'+u.unseen+'問）から出題します。'
+      : '直前の学習で出た問題の記録がまだありません。全問から出題します。';
+    if(!confirm(msg))return;
+  }else if(!u.list.length){
+    alert('前回の学習ですべての問題が出ています。ほかの出題方法を使ってください。');
+    return;
+  }
+  discardAnd(()=>begin(u.list,'practice','前回やらなかった問題'));
+}
+function startWrong(){discardAnd(()=>begin(QUESTIONS.filter(q=>inReview(q.id)),'wrong','間違えた問題の復習'));}
 function startExam(){discardAnd(()=>begin(shuffle(QUESTIONS).slice(0,50),'exam','50問 模擬試験'));}
 function migrateStats(){
   let ch=false;
@@ -404,7 +445,8 @@ function record(q,ok){
   s.last=ok;
   s.lastAt=Date.now();
   store.stats[q.id]=s;
-  if(!ok)store.wrong[q.id]=(store.wrong[q.id]||0)+1;else delete store.wrong[q.id];
+  if(!ok)store.wrong[q.id]=(store.wrong[q.id]||0)+1;
+  else{delete store.wrong[q.id];if(store.flagged)delete store.flagged[q.id];}
   save();
 }
 function plainStem(s,max){
@@ -478,16 +520,18 @@ function showAnalysis(sort){
   const missed=QUESTIONS.map(q=>{
     const s=store.stats[q.id];
     const wc=qWrongCount(s);
-    if(!s||wc<1)return null;
-    return {q,s,wc,n:s.n||0};
-  }).filter(Boolean).sort((a,b)=>b.wc-a.wc||(b.wc/b.n)-(a.wc/a.n)||b.n-a.n||a.q.id.localeCompare(b.q.id,undefined,{numeric:true}));
+    const fl=!!(store.flagged&&store.flagged[q.id]);
+    if((!s||wc<1)&&!fl)return null;
+    return {q,s:s||{n:0,last:true},wc:wc||0,n:(s&&s.n)||0,fl};
+  }).filter(Boolean).sort((a,b)=>b.wc-a.wc||((b.n?b.wc/b.n:0)-(a.n?a.wc/a.n:0))||b.n-a.n||(b.fl?1:0)-(a.fl?1:0)||a.q.id.localeCompare(b.q.id,undefined,{numeric:true}));
   h+=`<div class="card" id="anMissed"><h2>よく間違える問題</h2>`;
   if(missed.length){
     h+=`<button class="btn" id="btnMissedTop" onclick="startMissedTop()">よく間違える問題だけ解く（${missed.length}問）</button>`;
     missed.forEach(it=>{
       const last=it.s.last?'⭕ 正解':'❌ 不正解';
       const when=fmtWhen(it.s.lastAt);
-      h+=`<button type="button" class="an-q" data-id="${esc(it.q.id)}" onclick="startMissedOne('${esc(it.q.id)}')"><span class="an-qid">${esc(it.q.id)}</span><div class="an-stem">${esc(plainStem(it.q.question,36))}</div><div class="an-meta">間違えた ${it.wc}回 / 解いた ${it.n}回　直近：${last}${when?'　'+when:''}</div></button>`;
+      const cnt=it.n?`間違えた ${it.wc}回 / 解いた ${it.n}回　`:'';
+      h+=`<button type="button" class="an-q" data-id="${esc(it.q.id)}" onclick="startMissedOne('${esc(it.q.id)}')"><span class="an-qid">${esc(it.q.id)}</span>${it.fl?'<span class="an-flag">🔖</span>':''}<div class="an-stem">${esc(plainStem(it.q.question,36))}</div><div class="an-meta">${cnt}直近：${last}${when?'　'+when:''}${it.fl?'　復習に追加':''}</div></button>`;
     });
   }else{
     h+=`<p class="small" id="anMissedEmpty">まだ間違えた問題の記録がありません。</p><button class="btn" id="btnMissedTop" disabled>よく間違える問題だけ解く</button>`;
@@ -497,7 +541,7 @@ function showAnalysis(sort){
 }
 function startChapterWrong(no){
   const name=(CHAPTERS.find(c=>c.no===no)||{}).name||('第'+no+'章');
-  const cur=QUESTIONS.filter(q=>q.chapter===no&&store.wrong[q.id]);
+  const cur=QUESTIONS.filter(q=>q.chapter===no&&inReview(q.id));
   const ever=QUESTIONS.filter(q=>q.chapter===no&&qWrongCount(store.stats[q.id])>0);
   const list=cur.length?cur:ever;
   if(!list.length){alert('この章で、間違えた問題の記録がまだありません。');return;}
@@ -533,6 +577,7 @@ function render(){
     const ok=it.picked===q.answer;
     const ansLab=dispLetter(it.order,q.answer);
     h+=`<div class="fb ${ok?'ok':'ng'}">${ok?'⭕ 正解！':'❌ 不正解'}　正解：${ansLab}. ${fmtQ(q.choices[q.answer]||'')}</div>`;
+    if(ok)h+=`<label class="flag-lab" id="flagBox"><input type="checkbox" id="flagReview" ${store.flagged&&store.flagged[q.id]?'checked':''} onchange="toggleFlag('${esc(q.id)}',this.checked)">復習問題に追加（自信なし・まぐれ）</label>`;
     if(q.explanation||q.hint)h+=explWithHint(q, it.order);
   }
   h+=`<div class="row">`;
@@ -559,7 +604,7 @@ function finish(){
     S.correct=0;S.list.forEach(it=>{const ok=it.picked===it.q.answer;if(ok)S.correct++;record(it.q,ok);});
     const d=new Date();store.exams.push({date:d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0'),score:S.correct,total:S.list.length});save();
   }
-  S.done=true;sessionClear();
+  rememberLastSession(S.list);S.done=true;sessionClear();
   const n=S.list.length,pct=Math.round(S.correct/n*100);
   let h=`<div class="card"><h2>${esc(S.title)} 結果</h2><div class="big">${S.correct} / ${n}</div><div style="text-align:center">正答率 ${pct}%${S.mode==='exam'?'　経過時間 '+Math.round((Date.now()-S.start)/60000)+'分':''}</div>`;
   h+=`<button class="btn" onclick="goHome()">ホームに戻る</button>`;
@@ -569,7 +614,8 @@ function finish(){
   S.list.forEach((it,i)=>{const q=it.q,ok=it.picked===q.answer;
     const pLab=it.picked?dispLetter(it.order,it.picked):null;
     const aLab=dispLetter(it.order,q.answer);
-    h+=`<div class="rev"><span class="${ok?'ok':'ng'}">${ok?'⭕':'❌'}</span> ${i+1}. [${esc(q.id)}] ${fmt(q.question)}<br>あなた：${pLab?pLab+'. '+fmt(q.choices[it.picked]):'未回答'}<br>正解：<b>${aLab}. ${fmt(q.choices[q.answer]||'')}</b>`+(S.mode==='exam'&&q.explanation?`<details><summary>解説</summary>${explWithHint(q,it.order)}</details>`:'')+`</div>`;});
+    h+=`<div class="rev"><span class="${ok?'ok':'ng'}">${ok?'⭕':'❌'}</span> ${i+1}. [${esc(q.id)}] ${fmt(q.question)}<br>あなた：${pLab?pLab+'. '+fmt(q.choices[it.picked]):'未回答'}<br>正解：<b>${aLab}. ${fmt(q.choices[q.answer]||'')}</b>`+(S.mode==='exam'&&q.explanation?`<details><summary>解説</summary>${explWithHint(q,it.order)}</details>`:'')+`</div>`;
+    if(ok)h+=`<label class="flag-lab"><input type="checkbox" ${store.flagged&&store.flagged[q.id]?'checked':''} onchange="toggleFlag('${esc(q.id)}',this.checked)">復習問題に追加（自信なし・まぐれ）</label>`;});
   h+=`</div>`;app.innerHTML=h;window.scrollTo(0,0);
 }
 function retryList(){const l=S.list.filter(it=>it.picked!==it.q.answer).map(it=>it.q);begin(l,'wrong','やり直し');}
