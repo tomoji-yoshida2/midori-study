@@ -113,6 +113,12 @@ html:not(.pwok) header,html:not(.pwok) main,html:not(.pwok) #textref-note{displa
 .test-badge{display:inline-block;font-size:11px;font-weight:700;line-height:1.4;letter-spacing:.04em;color:#e65100;background:#ffe0b2;border:1px solid #ffb74d;border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:middle;white-space:nowrap}
 header .test-badge{color:#fff;background:#ef6c00;border-color:#ffcc80;flex:none}
 #pwgate h1 .test-badge{display:block;width:fit-content;margin:8px auto 0}
+
+.intro{padding:12px 16px}
+.intro summary{cursor:pointer;font-size:18px;line-height:1.4}
+.intro-list{margin:8px 0 0;padding-left:1.25em;font-size:14px;color:#333;line-height:1.55}
+.intro-list li{margin:0 0 6px}
+.intro-list li:last-child{margin-bottom:0}
 </style>
 <script>
 (function(){try{if(localStorage.getItem('midori_pw_ok')==='130322d32c42a4ed7dc84ab0eeb76edade54910d2f6ee7540af017158d562c65')document.documentElement.classList.add('pwok');}catch(e){}})();
@@ -316,6 +322,8 @@ function goHome(confirmLeave){
   const wrongN=Object.keys(store.wrong).filter(id=>byId[id]).length;
   const seen=Object.keys(store.stats).length; const okN=Object.values(store.stats).filter(s=>s.last).length;
   let h=``;
+  const introOpen=(()=>{try{return localStorage.getItem('midori_intro_closed')!=='1';}catch(e){return true;}})();
+  h+=`<div class="card intro" id="introBox"><details id="introDetails"${introOpen?' open':''}><summary><b>はじめに</b></summary><ul class="intro-list"><li>途中でやめても大丈夫。「中断して保存」かホームに戻ると、次に開いたとき「続きから再開」できます。</li><li>解いた記録や途中保存は、このスマホのブラウザの中だけに保存されます。ほかの人や作った人には見えません（サーバーには送られません）。</li><li>別のスマホや別のブラウザには引き継がれません。ブラウザの履歴・サイトデータを消すと記録も消えます。</li><li>ホーム画面に追加すると、アプリのようにすぐ開けます（ブラウザのメニュー→「ホーム画面に追加」）。</li></ul></details></div>`;
   if(sessionHas()){
     const ss=store.session,n=ss.list.length,pos=Math.min((ss.i||0)+1,n);
     h+=`<div class="card resume" id="resumeBox"><h2>続きから再開</h2><p>「${esc(ss.title||'学習')}」の途中（${ss.answered||0}問回答済み、${pos} / ${n}問目）が保存されています。閉じても、同じ場所・同じ選択肢の並びから再開できます。</p><button class="btn" id="btnResume" onclick="resumeSession()">続きから再開</button><button class="btn sec" id="btnStartOver" onclick="if(confirm('保存した途中経過を破棄しますか？')){sessionClear();goHome();}">最初から</button></div>`;
@@ -335,6 +343,8 @@ function goHome(confirmLeave){
 </div><div class="card"><button class="btn warn" onclick="resetAll()">学習記録をリセット</button><p class="small">記録はこの端末のブラウザ内（localStorage）に保存されます。</p></div>`;
   h+=`<div class="card"><details><summary><b>更新内容（2026/11/16 一時中断・赤線・写真の修正）</b></summary><p class="small" style="margin-top:8px">・学習の途中で「中断して保存」できるようにした（章別学習・模擬試験とも）。各問の回答後にも自動保存。再開時は「続きから再開」または「最初から」<br>・問題文・選択肢の赤線（下線）は、答える前には出さない。答えたあと（模擬試験は採点後）だけ表示する<br>・問題10-16・4-9の解説写真を外した（問題と合っていなかったため）<br>・問題8-15の解説に、ツヤハダゴマダラカミキリ（富山県）の写真を追加（既存のクビアカ幼虫の写真はそのまま）<br>・「写真で学ぼう」画面を追加（農薬ラベル／毒物・劇物／防護装備／散布機／ドリフト／看板・保管／散布後と環境）<br>・解説に、やさしい説明つきの写真・イラストを追加（答えたあとだけ表示。模擬試験は採点後の解説のみ）<br>・写真・イラストのクレジット画面を追加<br>・写真を、できるだけ日本で撮影されたものにさしかえ（除草剤の袋・防護服・無人ヘリ・ゴルフ場・害虫・雑草など）。日本の写真が見つからないものは、国名つきで残しています<br>・写真と問題・説明が合っていないものを見直し（さしかえ・キャプション修正・はずす）<br>・写真をさらに追加（芝や樹木の害虫・病気、家庭用スプレー、ペットボトルなど）。日本の写真を優先し、iNaturalist の観察写真も使用<br>・「写真で学ぼう」に「芝の害虫」「樹木の害虫」「芝と樹木の病気」「芝生の雑草」「農薬じゃないもの」を追加<br>・農薬の見た目（剤型）の写真とイラストを追加（日本の除草剤ボトルの登録番号、粒剤・粉剤・水和剤、薬液の見た目、1000倍のうすめ方など）。「写真で学ぼう」に「💊 農薬の見た目（剤型）」を追加<br>・写真は原則として日本で撮影されたものに統一。外国で撮影された写真・撮影地がわからない写真は外し、雑草・害虫・病気の一部を日本の写真に差し替え（顕微鏡写真・古い図は残しています）<br>・答えたあとの解説に「🔍 選択肢の見分け方」を追加（4つの選択肢を、日本の写真と短い説明でくらべられます。正解には ✓ 正解 の印）<br>・見分け方カードだけは、日本の写真が見つからない場合に外国の写真も使用（カードに「撮影：国名」を表示）<br>・問題4-5の解説に、日本のベントグラス（ハイコヌカグサ、北海道網走市）の写真を追加（既存の菌糸の顕微鏡写真はそのまま）<br>・IRACなどの作用機構コードの覚え方を、関連問題の「ポイント・覚え方」（答えたあとだけ表示）に追加<br>・問題7-8の解説に、さび病の寄主の組合せがなぜ正しい／正しくないかを病名つきで追記（選択肢の記号は使わず、シャッフルしてもずれない）<br>・問題・選択肢・シャッフル設定・太字などは変更なし</p></details></div><div class="ver">写真つき版 v2026.11.16-fix</div>`;
   app.innerHTML=h;updSel();window.scrollTo(0,0);
+  const intro=document.getElementById('introDetails');
+  if(intro)intro.addEventListener('toggle',()=>{try{if(intro.open)localStorage.removeItem('midori_intro_closed');else localStorage.setItem('midori_intro_closed','1');}catch(e){}});
 }
 function selAll(v){document.querySelectorAll('.chk').forEach(c=>c.checked=v);updSel();}
 function updSel(){store.sel=[...document.querySelectorAll('.chk')].filter(c=>c.checked).map(c=>+c.value);save();const n=QUESTIONS.filter(q=>store.sel.includes(q.chapter)).length;document.getElementById('selN').textContent=n;document.getElementById('startBtn').disabled=!n;}
