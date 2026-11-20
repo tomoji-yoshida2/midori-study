@@ -170,6 +170,39 @@ header .test-badge{color:#fff;background:#ef6c00;border-color:#ffcc80;flex:none}
 .intro-list{margin:8px 0 0;padding-left:1.25em;font-size:14px;color:#333;line-height:1.55}
 .intro-list li{margin:0 0 6px}
 .intro-list li:last-child{margin-bottom:0}
+
+/* 芝生の種類と病気 早見表 */
+.turf-lead{font-size:14px;color:#333;margin:0 0 10px;line-height:1.55}
+.turf-jump{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}
+.turf-jump a{flex:1;min-width:30%;text-align:center;padding:10px 8px;min-height:44px;border-radius:10px;border:2px solid #c8e6c9;background:#f1f8e9;color:#1b5e20;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center}
+.turf-sec{font-size:17px;margin:4px 0 10px;color:#1b5e20}
+.turf-types{display:flex;flex-direction:column;gap:10px}
+.turf-type{border-radius:12px;padding:12px;border:2px solid #c8e6c9;background:#fafdfa}
+.turf-type.warm{border-color:#ef6c00;background:#fff8e1}
+.turf-type.cool{border-color:#1565c0;background:#e3f2fd}
+.turf-type h3{margin:0 0 8px;font-size:16px;line-height:1.35}
+.turf-type dl,.turf-dis dl{margin:0}
+.turf-type dt,.turf-dis dt{font-size:12px;font-weight:700;color:#555;margin:8px 0 2px}
+.turf-type dd,.turf-dis dd{margin:0;font-size:14px;line-height:1.55}
+.turf-memo{margin:8px 0 0;padding:8px 10px;background:#fffde7;border-left:4px solid #f9a825;border-radius:8px;font-size:14px;line-height:1.5}
+.turf-cmp{width:100%;border-collapse:collapse;font-size:13px;line-height:1.45;margin:0}
+.turf-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 0 8px}
+.turf-cmp th,.turf-cmp td{border:1px solid #c8e6c9;padding:8px 8px;vertical-align:top;text-align:left}
+.turf-cmp th{background:#e8f5e9;color:#1b5e20;font-size:12px;white-space:nowrap}
+.turf-cmp th.warm{background:#fff3e0;color:#e65100}
+.turf-cmp th.cool{background:#e3f2fd;color:#1565c0}
+.turf-cmp td:first-child{font-weight:700;background:#fafafa;white-space:nowrap}
+.turf-season{margin:0 0 8px;padding:10px 12px;border:1px solid #c8e6c9;border-radius:10px;background:#fff}
+.turf-season h3{margin:0 0 6px;font-size:15px;color:#1b5e20}
+.turf-season p{margin:0;font-size:14px;line-height:1.55}
+.turf-dis{margin:0 0 10px;padding:12px;border:2px solid #dfe6dc;border-radius:12px;background:#fff}
+.turf-dis h3{margin:0 0 6px;font-size:16px;color:#1b5e20;line-height:1.35}
+.turf-tags{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px}
+.turf-tags span{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
+.turf-tags span.cool{background:#e3f2fd;color:#1565c0;border-color:#90caf9}
+.turf-tags span.both{background:#f3e5f5;color:#6a1b9a;border-color:#ce93d8}
+.turf-tags span.warn{background:#fff3e0;color:#e65100;border-color:#ffb74d}
+.turf-note{font-size:12px;color:#666;margin:12px 0 0;line-height:1.5}
 </style>
 <script>
 (function(){try{if(localStorage.getItem('midori_pw_ok')==='130322d32c42a4ed7dc84ab0eeb76edade54910d2f6ee7540af017158d562c65')document.documentElement.classList.add('pwok');}catch(e){}})();
@@ -274,6 +307,201 @@ function showGallery(){
   let h=`<div class="card"><h2>📷 写真で学ぼう</h2><p class="small">文字だけだと想像しにくい道具やマークを、写真とイラストで見てみよう。問題の答えには関係しない、基本のイメージ集です。写真をタップすると大きく見られます。</p></div>`;
   PH_TOPICS.forEach(t=>{h+=`<div class="card gal"><h3>${t.t}</h3><p class="gd">${esc(t.d)}</p>${t.k.map(k=>phHtml(PHOTOS[k])).join('')}</div>`;});
   h+=`<button class="btn sec" onclick="showCredits()">写真・イラストのクレジットを見る</button><button class="btn" onclick="goHome()">ホームに戻る</button>`;
+  app.innerHTML=h;window.scrollTo(0,0);
+}
+function showTurfTable(){
+  S=null;clearInterval(window._tm);document.getElementById('homeBtn').classList.remove('hidden');
+  let h=`<div class="card"><h2>🌿 芝生の種類と病気 早見表</h2>
+<p class="turf-lead">第3章「芝生の総合管理」と第4章「芝生の病害」で問われるポイントを、表にまとめました。問題を解く前にも、いつでも見て覚えられます。</p>
+<nav class="turf-jump"><a href="#turfTypes">芝の種類</a><a href="#turfSeason">月ごとの早見</a><a href="#turfDis">主な病気</a></nav>
+</div>
+
+<div class="card" id="turfTypes"><h2 class="turf-sec">芝の種類（暖地型と寒地型）</h2>
+<p class="turf-lead">ゴルフ場で使う芝は、生育の好みから<strong>暖地型</strong>と<strong>寒地型</strong>に分かれます（問題3-1）。</p>
+<div class="turf-scroll"><table class="turf-cmp">
+<thead><tr><th></th><th class="warm">暖地型（夏芝）</th><th class="cool">寒地型（冬芝）</th></tr></thead>
+<tbody>
+<tr><td>代表的な芝</td><td>ノシバ、コウライシバ（日本芝）、バミューダグラス</td><td>ベントグラス、ケンタッキーグラス、ペレニアルライグラス</td></tr>
+<tr><td>生育適温</td><td>おおむね25〜35℃</td><td>おおむね15〜25℃</td></tr>
+<tr><td>夏の様子</td><td>暑さに強く、旺盛に育つ</td><td>30℃を超す日が続くと元気がなくなり、夏枯れしやすい</td></tr>
+<tr><td>冬の様子</td><td>寒くなると休眠し、地上部は枯れ色（きつね色）になる。春に萌芽して、また緑になる</td><td>寒さに強く、低温でも緑を保つ</td></tr>
+<tr><td>主な使い方</td><td>フェアウェイやティー、公園・競技場など。日本の温暖地でよく使う</td><td>ベントグラスはゴルフ場のグリーンに多い（低く刈っても耐える）。ほかはフェアウェイ、公園、スポーツターフなど</td></tr>
+</tbody>
+</table></div>
+<div class="turf-types">
+<div class="turf-type warm"><h3>☀️ 暖地型（夏芝）</h3>
+<dl>
+<dt>代表をもう少し詳しく</dt>
+<dd>ノシバとコウライシバを日本芝といいます。問題ではセントオーガスティングラスも暖地型として出ます。</dd>
+<dt>覚え方</dt>
+<dd>暖地型＝ノシバ・コウライ・バミューダ。冬は寝て、夏に元気。</dd>
+</dl>
+</div>
+<div class="turf-type cool"><h3>❄️ 寒地型（冬芝）</h3>
+<dl>
+<dt>代表をもう少し詳しく</dt>
+<dd>ケンタッキーグラスは、ケンタッキーブルーグラスのことです。トールフェスクも代表的な寒地型ですが、問題の選択肢には出てきません。</dd>
+<dt>補足（問題3-7）</dt>
+<dd>ベントグラスの土壌は弱酸性（pH5〜6台）が目標。病害の抑制にもつながります。</dd>
+<dt>覚え方</dt>
+<dd>寒地型＝ベント・ケンタッキー・ペレニアルライ。冬も緑、夏が苦手。グリーンはベント。</dd>
+</dl>
+</div>
+</div>
+<p class="turf-note">温暖地では、冬も緑を保つために、暖地型の上に秋に寒地型を播く「ウィンターオーバーシード」が行われることがあります。</p>
+</div>
+
+<div class="card" id="turfSeason"><h2 class="turf-sec">月ごとの早見（いつ、何が出るか）</h2>
+<p class="turf-lead">試験では「この時期に出る病気はどれか」がよく問われます。特に、ラージパッチを真夏の病気とまちがえないことが大切です。</p>
+<div class="turf-season"><h3>春（3〜6月）</h3>
+<p>萌芽期の3〜4月は、日本芝の<strong>疑似葉腐病（春はげ症）</strong>。<strong>葉腐病（ラージパッチ）</strong>は4〜6月頃がピークのひとつ（20℃付近）。<strong>ダラースポット病</strong>や<strong>炭疽病</strong>も4月頃から。<strong>さび病</strong>も春に出ることがあります。</p></div>
+<div class="turf-season"><h3>梅雨（6〜7月）</h3>
+<p><strong>カーブラリア葉枯病（犬の足跡）</strong>は梅雨に病勢が特に激しい。<strong>ダラースポット病</strong>も梅雨〜初夏が特に激しい。<strong>葉腐病（ブラウンパッチ）</strong>は6月頃から（真夏は除く）。ラージパッチは6月頃まで。</p></div>
+<div class="turf-season"><h3>夏の高温期（7〜9月）</h3>
+<p><strong>赤焼病</strong>は、この高温期の病気（熱帯夜とまとまった雨に注意）。<strong>炭疽病</strong>も高温期に多い。<strong>ラージパッチは真夏の高温期には多発しない</strong>（誤りやすいポイント）。ダラースポットとブラウンパッチも、真夏は除くと覚える。</p></div>
+<div class="turf-season"><h3>秋（9〜11月）</h3>
+<p><strong>ラージパッチ</strong>が再び出る（9〜11月頃）。<strong>犬の足跡</strong>は9〜10月頃にも出る。ダラースポット、ブラウンパッチ、さび病も秋に注意。<strong>春はげ症の感染は晩秋から始まる</strong>ので、防除は秋の芝休眠前。</p></div>
+<div class="turf-season"><h3>冬〜早春（晩秋〜融雪）</h3>
+<p><strong>紅色雪腐病</strong>は、一般的に融雪直後。<strong>疑似葉腐病（イエローパッチ）</strong>は晩秋〜早春。<strong>かさ枯病</strong>（細菌）も主に寒い時期。春はげ症の症状は、翌春の萌芽期に現れます。</p></div>
+</div>
+
+<div class="card" id="turfDis"><h2 class="turf-sec">主な病気（見分け方と覚え方）</h2>
+<p class="turf-lead">芝の病気の多くは糸状菌（カビ）です。第二次伝染は土壌伝染が大半。菌糸は、早朝に芝生の露があるときに観察します（ダラースポットの菌糸、ブラウンパッチのスモーキーリングなど。乾くと見えにくくなります）。</p>
+
+<article class="turf-dis"><h3>葉腐病（ラージパッチ）</h3>
+<p class="turf-tags"><span>暖地型</span><span class="warn">春・秋（20℃付近）</span></p>
+<dl>
+<dt>かかりやすい芝</dt><dd>日本芝、バミューダグラス類、セントオーガスティングラスなどの暖地型芝草。</dd>
+<dt>出やすい時期・条件</dt><dd>主に4〜6月頃と9〜11月頃の年2回。20℃付近で病勢が最も激しい。排水不良や窒素の多い土壌で出やすい。<strong>7〜9月頃の高温期に多発する、は誤り</strong>です。</dd>
+<dt>症状の見分け方</dt><dd>直径30cm〜数mのパッチ。融合して大きくなる。降雨後、外周部が鮮やかな赤褐色になる。内部の芝は抵抗なく抜ける。激しいと内部が裸地になる。</dd>
+<dt>病原</dt><dd>糸状菌（リゾクトニア属菌 Rhizoctonia solani AG-2-2 LP）</dd>
+<dt>覚え方</dt><dd class="turf-memo">ラージ＝大きい円＋暖地型＋春と秋（20℃）。赤褐色で、根元から簡単に抜ける。</dd>
+</dl></article>
+
+<article class="turf-dis"><h3>葉腐病（ブラウンパッチ）</h3>
+<p class="turf-tags"><span class="cool">寒地型</span><span>6〜10月（真夏は除く）</span></p>
+<dl>
+<dt>かかりやすい芝</dt><dd>ベントグラスなどの寒地型芝草。</dd>
+<dt>出やすい時期・条件</dt><dd>6〜10月頃（真夏は除く）。</dd>
+<dt>症状の見分け方</dt><dd>正式名は葉腐病（ラージパッチと同じ正式名なので、通称で区別する）。早朝、露があるときに「スモーキーリング」（煙のような輪）が見えることがある。</dd>
+<dt>病原</dt><dd>糸状菌（リゾクトニア属菌 Rhizoctonia solani AG-2-2 IIIB、AG-1 IA、AG-1 IB）</dd>
+<dt>覚え方</dt><dd class="turf-memo">ブラウン＝寒地型の葉腐病。ラージと対で覚える。菌糸は早朝に見る。</dd>
+</dl></article>
+
+<article class="turf-dis"><h3>赤焼病</h3>
+<p class="turf-tags"><span class="cool">ベントグラス</span><span class="warn">真夏（7〜9月）</span></p>
+<dl>
+<dt>かかりやすい芝</dt><dd>ベントグラス（バミューダ・コウライ・ノシバには出ない、が問題のポイント）。</dd>
+<dt>出やすい時期・条件</dt><dd>7〜9月頃の高温期。熱帯夜が続き、まとまった雨があったときに要注意。排水不良土壌で多い。近年の発生は少ない。</dd>
+<dt>症状の見分け方</dt><dd>最初は数cmの小さなパッチだが、拡大が速く、短期間で大きくなる。周縁は紫を帯びた灰褐色。綿状の菌糸が見えることがある。刈り込み機械に菌糸が付いて広がることがある。</dd>
+<dt>病原</dt><dd>ピシウム属菌（Pythium aphanidermatum）</dd>
+<dt>覚え方</dt><dd class="turf-memo">赤焼＝ベント＋真夏＋ピシウム。熱帯夜とまとまった雨が合図。</dd>
+</dl></article>
+
+<article class="turf-dis"><h3>ダラースポット病</h3>
+<p class="turf-tags"><span class="both">多くの草種</span><span>4〜10月（真夏は除く）</span></p>
+<dl>
+<dt>かかりやすい芝</dt><dd>ベントグラスのほか、多くの草種に発生する。ほぼ全国で認められる主要病害。</dd>
+<dt>出やすい時期・条件</dt><dd>真夏を除く4〜10月頃。特に梅雨〜初夏の病勢が激しい。真冬がピークでも、真夏がピークでもない。</dd>
+<dt>症状の見分け方</dt><dd>直径2〜3cmほどの小さな円いパッチ（麦わら色になることが多い）。多発して融合しても、ほかの病気ほど大きくはならない。早朝、露があるときに菌糸が見えることがある。</dd>
+<dt>病原</dt><dd>糸状菌（カビ）</dd>
+<dt>覚え方</dt><dd class="turf-memo">ダラー＝1ドル硬貨サイズの小さな斑。多くの芝に出る。真夏は除く。</dd>
+</dl></article>
+
+<article class="turf-dis"><h3>カーブラリア葉枯病（犬の足跡）</h3>
+<p class="turf-tags"><span>日本芝・バミューダ</span><span class="warn">梅雨に特に激しい</span></p>
+<dl>
+<dt>かかりやすい芝</dt><dd>日本芝やバミューダグラス類など。</dd>
+<dt>出やすい時期・条件</dt><dd>6〜7月頃および9〜10月頃。特に梅雨時期の病勢が激しい。排水不良箇所に出やすい。</dd>
+<dt>症状の見分け方</dt><dd>初期は直径3〜10cm程度の褐色〜黒色のパッチ。激しいとターフ全体が枯れる。</dd>
+<dt>病原</dt><dd>カーブラリア属菌（Curvularia geniculata、Curvularia sp.）</dd>
+<dt>覚え方</dt><dd class="turf-memo">梅雨の黒っぽい小さなパッチ＋排水不良＝犬の足跡。</dd>
+</dl></article>
+
+<article class="turf-dis"><h3>疑似葉腐病（春はげ症）</h3>
+<p class="turf-tags"><span>日本芝</span><span>症状は3〜4月</span><span class="warn">防除は秋の休眠前</span></p>
+<dl>
+<dt>かかりやすい芝</dt><dd>日本芝（コウライシバのフェアウェイなど）。</dd>
+<dt>出やすい時期・条件</dt><dd>症状は萌芽期の3〜4月頃に出る。ただし病原菌の感染は晩秋から始まる。気温が上がると自然に治ることがある。</dd>
+<dt>防除の時期</dt><dd>殺菌剤による防除は、前年の秋（芝の休眠前）。冬の休眠期や、早春の萌芽前・萌芽直後ではない。</dd>
+<dt>病原</dt><dd>二核リゾクトニア（binucleate Rhizoctonia AG-D I）</dd>
+<dt>覚え方</dt><dd class="turf-memo">春にハゲて見えるが、感染は秋。防除は「秋の休眠前」。</dd>
+</dl></article>
+
+<article class="turf-dis"><h3>疑似葉腐病（イエローパッチ）</h3>
+<p class="turf-tags"><span class="cool">主に寒地型</span><span>晩秋〜早春</span></p>
+<dl>
+<dt>かかりやすい芝</dt><dd>主にベントグラス、ブルーグラス、ライグラスなどの寒地型芝草。</dd>
+<dt>出やすい時期・条件</dt><dd>晩秋〜早春期。夏の高温期の病気ではない。</dd>
+<dt>症状の見分け方</dt><dd>直径20〜50cmほどの黄〜褐色の円やリング状のパッチ。気温が上がると目立たなくなることが多い。</dd>
+<dt>病原</dt><dd>糸状菌（二核リゾクトニア／セラトバシディウム属など）</dd>
+<dt>覚え方</dt><dd class="turf-memo">イエローは寒い時期の寒地型。春はげ症（日本芝）と名前は似ているが別物。</dd>
+</dl></article>
+
+<article class="turf-dis"><h3>ベントグラス炭疽病</h3>
+<p class="turf-tags"><span class="cool">ベントグラス</span><span>4〜10月</span><span class="warn">高温期に多い・近年増加</span></p>
+<dl>
+<dt>かかりやすい芝</dt><dd>ベントグラス（グリーン）。</dd>
+<dt>出やすい時期・条件</dt><dd>4〜10月頃。特に高温期に多い。高温・乾燥・踏圧などのストレスで激しくなる。近年、発生が多い主要病害。</dd>
+<dt>症状の見分け方</dt><dd>感染部位により葉枯型と軸腐型に分かれる。条件によってパッチの色や形が変わり、現地での診断が難しい。</dd>
+<dt>病原</dt><dd>コレトトリカム属菌（Colletotrichum cereale および Colletotrichum sp.）</dd>
+<dt>覚え方</dt><dd class="turf-memo">近年増えて診断が難しいベント病害＝炭疽病。色や形が条件で変わる。</dd>
+</dl></article>
+
+<article class="turf-dis"><h3>ベントグラス立枯病（テイクオールパッチ）</h3>
+<p class="turf-tags"><span class="cool">ベントグラス</span><span class="warn">近年はほとんど見られない</span></p>
+<dl>
+<dt>かかりやすい芝</dt><dd>ベントグラス。</dd>
+<dt>出やすい時期・条件</dt><dd>1990〜1995年頃に全国的に発生が認められたが、現在ではほとんど認められない。</dd>
+<dt>試験でのポイント</dt><dd>「過去には多かったが、近年ほとんど認められなくなった病害」と問われたときの答え。</dd>
+<dt>覚え方</dt><dd class="turf-memo">テイクオールは1990年代に目立ったが、近年はほとんど見られない。</dd>
+</dl></article>
+
+<article class="turf-dis"><h3>フェアリーリング病</h3>
+<p class="turf-tags"><span class="both">すべての芝</span><span>キノコが原因</span></p>
+<dl>
+<dt>かかりやすい芝</dt><dd>すべての芝に出ることがある。</dd>
+<dt>出やすい時期・条件</dt><dd>梅雨頃から目立つことが多い。菌は土の中にいる。</dd>
+<dt>症状の見分け方</dt><dd>濃緑色のリングが広がる（直径10cmほどから、大きくなると数m〜それ以上）。雨が続くと、リングの外縁にキノコが出ることがある。内部が乾燥して枯れることもある。</dd>
+<dt>病原</dt><dd>担子菌（キノコ）類。代表はホコリタケ類、コムラサキシメジ、シバフタケ。<strong>エノキタケは違う</strong>（問題4-11）。</dd>
+<dt>覚え方</dt><dd class="turf-memo">妖精の輪＝濃い緑の輪＋キノコ。エノキタケは仲間に入れない。</dd>
+</dl></article>
+
+<article class="turf-dis"><h3>紅色雪腐病</h3>
+<p class="turf-tags"><span class="cool">主に寒地型</span><span>融雪直後</span></p>
+<dl>
+<dt>かかりやすい芝</dt><dd>主に寒地型芝草。</dd>
+<dt>出やすい時期・条件</dt><dd>一般的に融雪直後に発生する。夏の高温期の病気ではない。</dd>
+<dt>症状の見分け方</dt><dd>円いパッチの周縁が淡桃色〜紅色になることがある。菌核（小さな粒）はできない点が、ほかの雪腐病との違いになる。</dd>
+<dt>病原</dt><dd>糸状菌（カビ）</dd>
+<dt>覚え方</dt><dd class="turf-memo">紅色雪腐＝雪が溶けたあとのピンク。夏の病気ではない。</dd>
+</dl></article>
+
+<article class="turf-dis"><h3>かさ枯病</h3>
+<p class="turf-tags"><span class="cool">主に寒い時期</span><span class="warn">細菌（例外）</span></p>
+<dl>
+<dt>かかりやすい芝</dt><dd>主に寒地型（ベントグリーンなど）で問題になることが多い。</dd>
+<dt>出やすい時期・条件</dt><dd>主に寒い時期（晩秋〜春）。</dd>
+<dt>症状の見分け方</dt><dd>葉に病斑が出る。試験では、症状の細部より「細菌性病害」と覚えるのが第一。</dd>
+<dt>病原</dt><dd>細菌（シュードモナス属 Pseudomonas syringae 群菌）。ほかの主要病害の多くは糸状菌（カビ）。</dd>
+<dt>覚え方</dt><dd class="turf-memo">かさ枯だけ細菌（シュードモナス）。ほかの主要病害はほぼカビ。</dd>
+</dl></article>
+
+<article class="turf-dis"><h3>さび病</h3>
+<p class="turf-tags"><span>主に日本芝</span><span>春と秋</span></p>
+<dl>
+<dt>かかりやすい芝</dt><dd>主に日本芝。</dd>
+<dt>出やすい時期・条件</dt><dd>春と秋。湿度が高く、日照が不足するときに出やすい。</dd>
+<dt>症状の見分け方</dt><dd>葉に、鉄さびのような赤褐色の病斑ができる。葉や葉鞘が、鉄さびをかけたように見える。ラージパッチのように、根元から簡単に抜ける大きな円形枯れではない（問題4-9のひっかけ）。</dd>
+<dt>病原</dt><dd>糸状菌（さび病菌）。風で広がる。</dd>
+<dt>覚え方</dt><dd class="turf-memo">葉がさび色。抜ける大きな円（ラージパッチ）とは別。</dd>
+</dl>
+<p class="turf-note">樹木のさび病（ナシとビャクシンのように、種類の違う植物を行き来するもの）は第7章の別の話です。</p>
+</article>
+
+<p class="turf-note">この表は、アプリの第3章・第4章の解説に合わせています。草種の適温や冬の休眠、病気の一部の見た目（ダラースポットの大きさ、フェアリーリングの輪、紅色雪腐の色など）は、芝草の技術資料で一般的に説明されている内容で補いました。写真は入れていません。</p>
+</div>
+<button class="btn" onclick="goHome()">ホームに戻る</button>`;
   app.innerHTML=h;window.scrollTo(0,0);
 }
 function showCredits(){
@@ -396,12 +624,12 @@ function goHome(confirmLeave){
   h+=`<div class="card"><h2>50問 模擬試験</h2><p class="small">全${QUESTIONS.length}問からランダムに50問出題。解説は最後にまとめて表示されます。「もう覚えた」にした問題も出ます。</p><button class="btn" onclick="startExam()">模擬試験を開始する</button>`;
   if(store.exams.length){h+=`<div class="small">過去の結果（タップすると、その回の解説を見られます）：</div>`+examListHtml(5);
     if(store.exams.length>5)h+=`<button class="btn sec" id="btnExamAll" onclick="showExamList()">模擬試験の履歴をすべて見る（${store.exams.length}回）</button>`;}
-  h+=`</div><div class="card"><h2>📷 写真で学ぼう</h2><p class="small">農薬ラベル・毒物劇物のマーク・防護装備・散布機・ドリフトなどを、写真とイラストで確認できます。</p><button class="btn" onclick="showGallery()">写真で学ぶ</button><button class="btn sec" onclick="showCredits()">写真・イラストのクレジット</button></div><div class="card"><h2>設定</h2>
+  h+=`</div><div class="card"><h2>🌿 芝生の種類と病気 早見表</h2><p class="small">暖地型・寒地型のちがいと、かかりやすい病気・出やすい時期をまとめました。第3章・第4章の復習に使えます。</p><button class="btn" id="btnTurfTable" onclick="showTurfTable()">早見表を見る</button></div><div class="card"><h2>📷 写真で学ぼう</h2><p class="small">農薬ラベル・毒物劇物のマーク・防護装備・散布機・ドリフトなどを、写真とイラストで確認できます。</p><button class="btn" onclick="showGallery()">写真で学ぶ</button><button class="btn sec" onclick="showCredits()">写真・イラストのクレジット</button></div><div class="card"><h2>設定</h2>
 <label class="opt"><input type="checkbox" id="optShuf" ${store.shuffle?'checked':''} onchange="store.shuffle=this.checked;save()">出題順をランダムにする</label>
 <label class="opt"><input type="checkbox" id="optShufC" ${store.shuffleChoices?'checked':''} onchange="store.shuffleChoices=this.checked;save()">選択肢をシャッフル</label>
 <p class="small">「選択肢をシャッフル」をオンにすると、毎回 a/b/c/d の位置が入れ替わり、位置だけで答えを覚えにくくなります（既定オン）。</p>
 </div><div class="card"><button class="btn warn" onclick="resetAll()">学習記録をリセット</button><p class="small">記録はこの端末のブラウザ内（localStorage）に保存されます。</p></div>`;
-  h+=`<div class="card"><details><summary><b>更新内容（2026/11/16 一時中断・赤線・写真の修正）</b></summary><p class="small" style="margin-top:8px">・学習の途中で「中断して保存」できるようにした（章別学習・模擬試験とも）。各問の回答後にも自動保存。再開時は「続きから再開」または「最初から」<br>・問題文・選択肢の赤線（下線）は、答える前には出さない。答えたあと（模擬試験は採点後）だけ表示する<br>・問題10-16・4-9の解説写真を外した（問題と合っていなかったため）<br>・問題8-15の解説に、ツヤハダゴマダラカミキリ（富山県）の写真を追加（既存のクビアカ幼虫の写真はそのまま）<br>・「写真で学ぼう」画面を追加（農薬ラベル／毒物・劇物／防護装備／散布機／ドリフト／看板・保管／散布後と環境）<br>・解説に、やさしい説明つきの写真・イラストを追加（答えたあとだけ表示。模擬試験は採点後の解説のみ）<br>・写真・イラストのクレジット画面を追加<br>・写真を、できるだけ日本で撮影されたものにさしかえ（除草剤の袋・防護服・無人ヘリ・ゴルフ場・害虫・雑草など）。日本の写真が見つからないものは、国名つきで残しています<br>・写真と問題・説明が合っていないものを見直し（さしかえ・キャプション修正・はずす）<br>・写真をさらに追加（芝や樹木の害虫・病気、家庭用スプレー、ペットボトルなど）。日本の写真を優先し、iNaturalist の観察写真も使用<br>・「写真で学ぼう」に「芝の害虫」「樹木の害虫」「芝と樹木の病気」「芝生の雑草」「農薬じゃないもの」を追加<br>・農薬の見た目（剤型）の写真とイラストを追加（日本の除草剤ボトルの登録番号、粒剤・粉剤・水和剤、薬液の見た目、1000倍のうすめ方など）。「写真で学ぼう」に「💊 農薬の見た目（剤型）」を追加<br>・写真は原則として日本で撮影されたものに統一。外国で撮影された写真・撮影地がわからない写真は外し、雑草・害虫・病気の一部を日本の写真に差し替え（顕微鏡写真・古い図は残しています）<br>・答えたあとの解説に「🔍 選択肢の見分け方」を追加（4つの選択肢を、日本の写真と短い説明でくらべられます。正解には ✓ 正解 の印）<br>・見分け方カードだけは、日本の写真が見つからない場合に外国の写真も使用（カードに「撮影：国名」を表示）<br>・問題4-5の解説に、日本のベントグラス（ハイコヌカグサ、北海道網走市）の写真を追加（既存の菌糸の顕微鏡写真はそのまま）<br>・IRACなどの作用機構コードの覚え方を、関連問題の「ポイント・覚え方」（答えたあとだけ表示）に追加<br>・問題7-8の解説に、さび病の寄主の組合せがなぜ正しい／正しくないかを病名つきで追記（選択肢の記号は使わず、シャッフルしてもずれない）<br>・問題・選択肢・シャッフル設定・太字などは変更なし</p></details></div><div class="ver">写真つき版 v2026.11.16-fix</div>`;
+  h+=`<div class="card"><details><summary><b>更新内容（2026/11/16 一時中断・赤線・写真の修正）</b></summary><p class="small" style="margin-top:8px">・学習の途中で「中断して保存」できるようにした（章別学習・模擬試験とも）。各問の回答後にも自動保存。再開時は「続きから再開」または「最初から」<br>・問題文・選択肢の赤線（下線）は、答える前には出さない。答えたあと（模擬試験は採点後）だけ表示する<br>・問題10-16・4-9の解説写真を外した（問題と合っていなかったため）<br>・問題8-15の解説に、ツヤハダゴマダラカミキリ（富山県）の写真を追加（既存のクビアカ幼虫の写真はそのまま）<br>・「写真で学ぼう」画面を追加（農薬ラベル／毒物・劇物／防護装備／散布機／ドリフト／看板・保管／散布後と環境）<br>・解説に、やさしい説明つきの写真・イラストを追加（答えたあとだけ表示。模擬試験は採点後の解説のみ）<br>・写真・イラストのクレジット画面を追加<br>・写真を、できるだけ日本で撮影されたものにさしかえ（除草剤の袋・防護服・無人ヘリ・ゴルフ場・害虫・雑草など）。日本の写真が見つからないものは、国名つきで残しています<br>・写真と問題・説明が合っていないものを見直し（さしかえ・キャプション修正・はずす）<br>・写真をさらに追加（芝や樹木の害虫・病気、家庭用スプレー、ペットボトルなど）。日本の写真を優先し、iNaturalist の観察写真も使用<br>・「写真で学ぼう」に「芝の害虫」「樹木の害虫」「芝と樹木の病気」「芝生の雑草」「農薬じゃないもの」を追加<br>・農薬の見た目（剤型）の写真とイラストを追加（日本の除草剤ボトルの登録番号、粒剤・粉剤・水和剤、薬液の見た目、1000倍のうすめ方など）。「写真で学ぼう」に「💊 農薬の見た目（剤型）」を追加<br>・写真は原則として日本で撮影されたものに統一。外国で撮影された写真・撮影地がわからない写真は外し、雑草・害虫・病気の一部を日本の写真に差し替え（顕微鏡写真・古い図は残しています）<br>・答えたあとの解説に「🔍 選択肢の見分け方」を追加（4つの選択肢を、日本の写真と短い説明でくらべられます。正解には ✓ 正解 の印）<br>・見分け方カードだけは、日本の写真が見つからない場合に外国の写真も使用（カードに「撮影：国名」を表示）<br>・問題4-5の解説に、日本のベントグラス（ハイコヌカグサ、北海道網走市）の写真を追加（既存の菌糸の顕微鏡写真はそのまま）<br>・IRACなどの作用機構コードの覚え方を、関連問題の「ポイント・覚え方」（答えたあとだけ表示）に追加<br>・問題7-8の解説に、さび病の寄主の組合せがなぜ正しい／正しくないかを病名つきで追記（選択肢の記号は使わず、シャッフルしてもずれない）<br>・問題・選択肢・シャッフル設定・太字などは変更なし</p></details></div><div class="ver">写真つき版 v2026.11.20-turftable</div>`;
   app.innerHTML=h;updSel();window.scrollTo(0,0);
   const intro=document.getElementById('introDetails');
   if(intro)intro.addEventListener('toggle',()=>{try{if(intro.open)localStorage.removeItem('midori_intro_closed');else localStorage.setItem('midori_intro_closed','1');}catch(e){}});
