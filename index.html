@@ -153,7 +153,17 @@ header .test-badge{color:#fff;background:#ef6c00;border-color:#ffcc80;flex:none}
 .hist-note{font-size:13px;color:#e65100;margin:4px 0 8px}
 .hist-st{font-weight:700}
 
-
+.exam-hist .an-qid{font-size:15px;color:#222}
+.exam-ch{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px solid #eee;font-size:14px;line-height:1.4}
+.exam-ch span:last-child{white-space:nowrap;color:#555}
+.exam-q{margin:8px 0;border:2px solid #ddd;border-radius:10px;background:#fff;overflow:hidden}
+.exam-q.ng{border-color:#ef9a9a}
+.exam-q.ok{border-color:#c8e6c9}
+.exam-q>summary{cursor:pointer;padding:12px;font-size:15px;line-height:1.45;min-height:52px;list-style:none}
+.exam-q>summary::-webkit-details-marker{display:none}
+.exam-q .exam-body{padding:0 12px 12px}
+.exam-nodetail{background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:12px;color:#555;font-size:14px;line-height:1.5}
+.choice.static{cursor:default}
 
 .intro{padding:12px 16px}
 .intro summary{cursor:pointer;font-size:18px;line-height:1.4}
@@ -299,7 +309,7 @@ function stripMarkup(s){
 function fmtStem(s){ return fmt(stripMarkup(s)); }
 /** Map original choice letters in explanation text to shuffled display letters. */
 function remapChoiceLetters(s, order){
-  if(!store.shuffleChoices || !order) return s;
+  if(!order) return s;
   const toDisp={}; order.forEach((orig,i)=>{ toDisp[orig]=LET[i]; });
   const tags=[];
   let t=String(s==null?'':s).replace(/<[^>]+>/g,m=>{tags.push(m);return '§T'+ (tags.length-1) +'§';});
@@ -384,7 +394,8 @@ function goHome(confirmLeave){
   h+=`<button class="btn sec" id="btnUnasked" onclick="startUnasked()">前回やらなかった問題を解く（${unasked.list.length}問）</button><p class="small">直前の学習で出た問題以外から出題します。まだ記録がないときは、未回答の問題（なければ全問）から出題します。</p></div>`;
   h+=`<div class="card"><h2>間違えた問題だけ復習</h2><p class="small">間違えた問題は自動で記録され、復習で正解すると一覧から外れます。正解したあと「復習問題に追加」したものも含みます。</p><button class="btn" ${wrongN?'':'disabled'} onclick="startWrong()">間違えた問題だけ復習（${wrongN}問）</button></div>`;
   h+=`<div class="card"><h2>50問 模擬試験</h2><p class="small">全${QUESTIONS.length}問からランダムに50問出題。解説は最後にまとめて表示されます。「もう覚えた」にした問題も出ます。</p><button class="btn" onclick="startExam()">模擬試験を開始する</button>`;
-  if(store.exams.length){h+=`<div class="small">過去の結果：</div>`+store.exams.slice(-5).reverse().map(e=>`<div class="rev">${esc(e.date)}　<b>${e.score}/${e.total}</b>（${Math.round(e.score/e.total*100)}%）</div>`).join('');}
+  if(store.exams.length){h+=`<div class="small">過去の結果（タップすると、その回の解説を見られます）：</div>`+examListHtml(5);
+    if(store.exams.length>5)h+=`<button class="btn sec" id="btnExamAll" onclick="showExamList()">模擬試験の履歴をすべて見る（${store.exams.length}回）</button>`;}
   h+=`</div><div class="card"><h2>📷 写真で学ぼう</h2><p class="small">農薬ラベル・毒物劇物のマーク・防護装備・散布機・ドリフトなどを、写真とイラストで確認できます。</p><button class="btn" onclick="showGallery()">写真で学ぶ</button><button class="btn sec" onclick="showCredits()">写真・イラストのクレジット</button></div><div class="card"><h2>設定</h2>
 <label class="opt"><input type="checkbox" id="optShuf" ${store.shuffle?'checked':''} onchange="store.shuffle=this.checked;save()">出題順をランダムにする</label>
 <label class="opt"><input type="checkbox" id="optShufC" ${store.shuffleChoices?'checked':''} onchange="store.shuffleChoices=this.checked;save()">選択肢をシャッフル</label>
@@ -536,9 +547,10 @@ var histFilter='all',histSort='count',histIncludeMastered=false;
 function setHistFilter(f){histFilter=f;showManage();}
 function setHistSort(s){histSort=s;showManage();}
 function setHistInclude(on){histIncludeMastered=!!on;showManage('stay');}
-function histRow(it){
+function histRow(it,from){
   const dates=histDates(it.h);
-  return `<button type="button" class="an-q hist-q" data-id="${esc(it.q.id)}" onclick="startMissedOne('${esc(it.q.id)}')"><span class="an-qid">${esc(it.q.id)}</span>${it.st.k==='mastered'?'<span class="an-ok">✅</span>':''}${it.st.k==='flagged'?'<span class="an-flag">🔖</span>':''}<div class="an-stem">${esc(plainStem(it.q.question,36))}</div><div class="an-meta">間違えた ${it.n}回 / 解いた ${it.attempts}回　<span class="hist-st">${it.st.label}</span></div>${dates?`<div class="hist-dates">${esc(dates)}</div>`:''}</button>`;
+  const src=from||'hist';
+  return `<button type="button" class="an-q hist-q" data-id="${esc(it.q.id)}" onclick="showHistDetail('${esc(it.q.id)}','${src}')"><span class="an-qid">${esc(it.q.id)}</span>${it.st.k==='mastered'?'<span class="an-ok">✅</span>':''}${it.st.k==='flagged'?'<span class="an-flag">🔖</span>':''}<div class="an-stem">${esc(plainStem(it.q.question,36))}</div><div class="an-meta">間違えた ${it.n}回 / 解いた ${it.attempts}回　<span class="hist-st">${it.st.label}</span></div>${dates?`<div class="hist-dates">${esc(dates)}</div>`:''}</button>`;
 }
 function startHistQuiz(kind){
   const items=kind==='top'?topMissedItems():filteredHistoryItems();
@@ -579,7 +591,7 @@ function showManage(focus){
     h+=`<label class="hist-inc"><input type="checkbox" id="histIncludeMastered" ${inc} onchange="setHistInclude(this.checked)">覚えた問題も含める</label>`;
     if(excl&&!histIncludeMastered)h+=`<p class="hist-note" id="histExclNote">覚えた問題は除外（${excl}問）</p>`;
     h+=`<button class="btn" id="btnTopMissedQuiz" onclick="startHistQuiz('top')">特によく間違える問題を解く（${histIncludeMastered?top.length:top.length-excl}問）</button>`;
-    h+=`<div id="histTopList">${top.map(histRow).join('')}</div>`;
+    h+=`<div id="histTopList">${top.map(it=>histRow(it,'top')).join('')}</div>`;
   }else{
     h+=`<p class="small" id="histTopEmpty">2回以上間違えた問題は、まだありません。</p>`;
   }
@@ -591,7 +603,7 @@ function showManage(focus){
     const excl=all.filter(it=>isMastered(it.q.id)).length;
     if(excl&&!histIncludeMastered)h+=`<p class="hist-note">まとめて解くときは、覚えた問題は除外（${excl}問）</p>`;
     h+=`<button class="btn" id="btnHistQuiz" onclick="startHistQuiz('hist')">履歴の問題をまとめて解く（${histIncludeMastered?all.length:all.length-excl}問）</button>`;
-    h+=`<div id="histList">${all.map(histRow).join('')}</div>`;
+    h+=`<div id="histList">${all.map(it=>histRow(it,'hist')).join('')}</div>`;
   }else{
     h+=`<p class="small" id="histEmpty">まだ間違えた履歴はありません。</p>`;
   }
@@ -804,11 +816,16 @@ function finish(){
     if(un&&!confirm('未回答が'+un+'問あります。採点しますか？'))return;
     clearInterval(window._tm);
     S.correct=0;S.list.forEach(it=>{const ok=it.picked===it.q.answer;if(ok)S.correct++;record(it.q,ok);});
-    const d=new Date();store.exams.push({date:d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0'),score:S.correct,total:S.list.length});save();
+    const d=new Date();
+    store.exams.push({date:d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0'),t:Date.now(),score:S.correct,total:S.list.length,elapsed:sessionElapsed(),items:S.list.map(it=>({id:it.q.id,order:it.order.slice(),picked:it.picked||null}))});
+    save();
+    rememberLastSession(S.list);S.done=true;sessionClear();
+    showExamDetail(store.exams.length-1,true);
+    return;
   }
   rememberLastSession(S.list);S.done=true;sessionClear();
   const n=S.list.length,pct=Math.round(S.correct/n*100);
-  let h=`<div class="card"><h2>${esc(S.title)} 結果</h2><div class="big">${S.correct} / ${n}</div><div style="text-align:center">正答率 ${pct}%${S.mode==='exam'?'　経過時間 '+Math.round((Date.now()-S.start)/60000)+'分':''}</div>`;
+  let h=`<div class="card"><h2>${esc(S.title)} 結果</h2><div class="big">${S.correct} / ${n}</div><div style="text-align:center">正答率 ${pct}%</div>`;
   h+=`<button class="btn" onclick="goHome()">ホームに戻る</button>`;
   const wr=S.list.filter(it=>it.picked!==it.q.answer);
   if(wr.length)h+=`<button class="btn sec" onclick="retryList()">今回間違えた/未回答の${wr.length}問をもう一度</button>`;
@@ -816,12 +833,166 @@ function finish(){
   S.list.forEach((it,i)=>{const q=it.q,ok=it.picked===q.answer;
     const pLab=it.picked?dispLetter(it.order,it.picked):null;
     const aLab=dispLetter(it.order,q.answer);
-    h+=`<div class="rev"><span class="${ok?'ok':'ng'}">${ok?'⭕':'❌'}</span> ${i+1}. [${esc(q.id)}] ${fmt(q.question)}<br>あなた：${pLab?pLab+'. '+fmt(q.choices[it.picked]):'未回答'}<br>正解：<b>${aLab}. ${fmt(q.choices[q.answer]||'')}</b>`+(S.mode==='exam'&&q.explanation?`<details><summary>解説</summary>${explWithHint(q,it.order)}</details>`:'')+`</div>`;
+    h+=`<div class="rev"><span class="${ok?'ok':'ng'}">${ok?'⭕':'❌'}</span> ${i+1}. [${esc(q.id)}] ${fmt(q.question)}<br>あなた：${pLab?pLab+'. '+fmt(q.choices[it.picked]):'未回答'}<br>正解：<b>${aLab}. ${fmt(q.choices[q.answer]||'')}</b></div>`;
     if(ok){h+=`<label class="flag-lab"><input type="checkbox" ${store.flagged&&store.flagged[q.id]?'checked':''} onchange="toggleFlag('${esc(q.id)}',this.checked)">復習問題に追加（自信なし・まぐれ）</label>`;
     h+=`<label class="flag-lab mast-lab"><input type="checkbox" ${isMastered(q.id)?'checked':''} onchange="toggleMastered('${esc(q.id)}',this.checked)">もう覚えた（学習から外す）</label>`;}});
   h+=`</div>`;app.innerHTML=h;window.scrollTo(0,0);
 }
 function retryList(){const l=S.list.filter(it=>it.picked!==it.q.answer).map(it=>it.q);begin(l,'wrong','やり直し');}
+function retryExam(idx){
+  const e=store.exams[idx];
+  if(!examHasDetail(e)){alert('この回は詳細が保存されていません');return;}
+  const list=examResolved(e).filter(it=>it.q&&it.picked!==it.q.answer).map(it=>it.q);
+  if(!list.length){alert('間違えた問題はありません');return;}
+  discardAnd(()=>begin(list,'wrong','やり直し'));
+}
+function fmtElapsed(ms){
+  const s=Math.max(0,Math.round((ms||0)/1000));
+  return Math.floor(s/60)+'分'+String(s%60).padStart(2,'0')+'秒';
+}
+function examHasDetail(e){return !!(e&&Array.isArray(e.items)&&e.items.length);}
+function examResolved(e){
+  return (e.items||[]).map((it,i)=>{
+    const q=byId[it.id];
+    const order=(it.order&&it.order.length)?it.order.slice():LET.slice();
+    return {i,id:it.id,q,order,picked:it.picked||null,ok:!!(q&&it.picked===q.answer)};
+  });
+}
+function examChapters(items){
+  const map=new Map();
+  items.forEach(it=>{
+    if(!it.q)return;
+    const no=it.q.chapter;
+    if(!map.has(no))map.set(no,{no,name:it.q.chapter_name,ok:0,n:0});
+    const c=map.get(no);c.n++;if(it.ok)c.ok++;
+  });
+  return [...map.values()].sort((a,b)=>a.no-b.no);
+}
+function examListHtml(limit){
+  const arr=store.exams.map((e,i)=>({e,i})).reverse();
+  const shown=limit?arr.slice(0,limit):arr;
+  return shown.map(({e,i})=>{
+    const pct=Math.round(e.score/e.total*100);
+    const time=e.elapsed!=null?'　'+fmtElapsed(e.elapsed):'';
+    const nod=examHasDetail(e)?'':'　詳細なし';
+    return `<button type="button" class="an-q exam-hist" data-idx="${i}" onclick="showExamDetail(${i})"><div class="an-qid">${esc(e.date)}</div><div class="an-meta"><b>${e.score}/${e.total}</b>（${pct}%）${time}${nod}</div></button>`;
+  }).join('');
+}
+function showExamList(){
+  clearInterval(window._tm);
+  document.getElementById('homeBtn').classList.remove('hidden');
+  let h=`<div id="examListView"><div class="card"><h2>模擬試験の履歴</h2><p class="small">回数をタップすると、その回の結果と間違えた問題の解説を見られます。</p>`;
+  h+=examListHtml();
+  h+=`<button class="btn sec" onclick="goHome()">ホームに戻る</button></div></div>`;
+  app.innerHTML=h;window.scrollTo(0,0);
+}
+function renderChoicesReview(q,order,picked){
+  order=(order&&order.length)?order:LET.slice();
+  let h='';
+  order.forEach((k,idx)=>{
+    let cls='choice static';
+    if(k===q.answer)cls+=' correct';
+    else if(picked&&k===picked)cls+=' wrong';
+    else cls+=' dim';
+    h+=`<div class="${cls}"><span class="lt">${LET[idx]}</span><span>${fmt(q.choices[k]||'')}</span></div>`;
+  });
+  return h;
+}
+function renderQuestionReview(q,order,picked,opts){
+  const showPick=!(opts&&opts.noPick);
+  const ok=showPick&&picked===q.answer;
+  const aLab=dispLetter(order,q.answer);
+  let h=`<div class="qmeta"><span>第${q.chapter}章 ${esc(q.chapter_name)}</span><span>問題 ${esc(q.id)}（p.${q.printed_page}）</span></div>`;
+  h+=`<div class="qtext">${fmt(q.question)}</div>`;
+  h+=renderChoicesReview(q,order,showPick?picked:null);
+  if(showPick){
+    const pLab=picked?dispLetter(order,picked):null;
+    h+=`<div class="fb ${ok?'ok':'ng'}">${ok?'⭕ 正解':'❌ 不正解'}　あなた：${pLab?pLab+'. '+fmt(q.choices[picked]||''):'未回答'}<br>正解：${aLab}. ${fmt(q.choices[q.answer]||'')}</div>`;
+  }else{
+    h+=`<div class="fb ok">正解：${aLab}. ${fmt(q.choices[q.answer]||'')}</div>`;
+  }
+  if(q.explanation||q.hint)h+=explWithHint(q,order);
+  return h;
+}
+var examDetailIdx=null,examWrongOnly=true,examDetailFresh=false;
+function setExamWrongOnly(on){examWrongOnly=!!on;showExamDetail(examDetailIdx,'stay');}
+function showExamDetail(idx,fresh){
+  const e=store.exams[idx];
+  if(!e){alert('その回の記録が見つかりません');goHome();return;}
+  examDetailIdx=idx;
+  if(fresh!=='stay'){examWrongOnly=true;examDetailFresh=!!fresh;}
+  clearInterval(window._tm);
+  document.getElementById('homeBtn').classList.remove('hidden');
+  const n=e.total,pct=Math.round(e.score/n*100);
+  let h=`<div id="examDetailView"><div class="card"><h2>模擬試験の結果</h2><p class="small">${esc(e.date)}</p><div class="big">${e.score} / ${n}</div><div style="text-align:center">正答率 ${pct}%${e.elapsed!=null?'　経過時間 '+fmtElapsed(e.elapsed):''}</div>`;
+  h+=`<button class="btn" onclick="goHome()">ホームに戻る</button>`;
+  if(examHasDetail(e)){
+    const items=examResolved(e);
+    const wr=items.filter(it=>!it.ok);
+    if(wr.length)h+=`<button class="btn sec" id="btnRetryExam" onclick="retryExam(${idx})">今回間違えた/未回答の${wr.length}問をもう一度</button>`;
+    h+=`</div>`;
+    const chs=examChapters(items);
+    if(chs.length){
+      h+=`<div class="card" id="examChCard"><h2>章ごとの内訳</h2>`;
+      chs.forEach(c=>{
+        const p=c.n?Math.round(c.ok/c.n*100):0;
+        h+=`<div class="exam-ch"><span>第${c.no}章 ${esc(c.name)}</span><span>${c.ok}/${c.n}（${p}%）</span></div>`;
+      });
+      h+=`</div>`;
+    }
+    const shown=examWrongOnly?wr:items;
+    h+=`<div class="card" id="examQCard"><h2>${examWrongOnly?'間違えた問題':'問題ごとの結果'}</h2>`;
+    h+=`<label class="hist-inc"><input type="checkbox" id="examWrongOnly" ${examWrongOnly?'checked':''} onchange="setExamWrongOnly(this.checked)">間違えた問題だけ</label>`;
+    h+=`<p class="small">${examWrongOnly?('間違えた/未回答 '+wr.length+'問'):('全'+items.length+'問（うち間違い '+wr.length+'問）')}</p>`;
+    if(!shown.length)h+=`<p class="small">表示する問題はありません。</p>`;
+    shown.forEach(it=>{
+      if(!it.q){h+=`<div class="rev">❌ ${it.i+1}. [${esc(it.id)}] 問題データが更新されたため、表示できません。</div>`;return;}
+      const q=it.q,ok=it.ok;
+      h+=`<details class="exam-q ${ok?'ok':'ng'}" data-id="${esc(q.id)}"><summary><span class="${ok?'ok':'ng'}">${ok?'⭕':'❌'}</span> ${it.i+1}. [${esc(q.id)}] ${esc(plainStem(q.question,36))}</summary><div class="exam-body">`;
+      h+=renderQuestionReview(q,it.order,it.picked);
+      if(ok){h+=`<label class="flag-lab"><input type="checkbox" ${store.flagged&&store.flagged[q.id]?'checked':''} onchange="toggleFlag('${esc(q.id)}',this.checked)">復習問題に追加（自信なし・まぐれ）</label>`;
+      h+=`<label class="flag-lab mast-lab"><input type="checkbox" ${isMastered(q.id)?'checked':''} onchange="toggleMastered('${esc(q.id)}',this.checked)">もう覚えた（学習から外す）</label>`;}
+      h+=`</div></details>`;
+    });
+    if(examWrongOnly){
+      const oks=items.filter(it=>it.ok&&it.q);
+      if(oks.length){
+        h+=`</div><div class="card" id="examOkFlags"><h2>正解した問題</h2><p class="small">自信がなかったものや、もう覚えたものは、ここで記録できます。</p>`;
+        oks.forEach(it=>{
+          const q=it.q;
+          h+=`<div class="rev"><span class="ok">⭕</span> ${it.i+1}. [${esc(q.id)}] ${esc(plainStem(q.question,32))}</div>`;
+          h+=`<label class="flag-lab"><input type="checkbox" ${store.flagged&&store.flagged[q.id]?'checked':''} onchange="toggleFlag('${esc(q.id)}',this.checked)">復習問題に追加（自信なし・まぐれ）</label>`;
+          h+=`<label class="flag-lab mast-lab"><input type="checkbox" ${isMastered(q.id)?'checked':''} onchange="toggleMastered('${esc(q.id)}',this.checked)">もう覚えた（学習から外す）</label>`;
+        });
+      }
+    }
+    h+=`</div>`;
+  }else{
+    h+=`</div><div class="card"><p class="exam-nodetail" id="examNoDetail">この回は詳細が保存されていません。これから受験する模擬試験から、問題ごとの解説を保存します。</p></div>`;
+  }
+  h+=`</div>`;
+  app.innerHTML=h;window.scrollTo(0,0);
+}
+var histDetailFrom='hist';
+function showHistDetail(id,from){
+  const q=byId[id];
+  if(!q){alert('問題が見つかりません');return;}
+  histDetailFrom=from||'hist';
+  clearInterval(window._tm);
+  document.getElementById('homeBtn').classList.remove('hidden');
+  const n=histTotal(id);
+  const attempts=(store.stats[id]&&store.stats[id].n)||0;
+  const st=histStatus(id);
+  const dates=histDates(store.history[id]||{events:[],past:0});
+  let h=`<div id="histDetailView" class="card"><h2>問題 ${esc(q.id)}</h2>`;
+  h+=`<p class="an-meta">間違えた ${n}回 / 解いた ${attempts}回　<span class="hist-st">${st.label}</span></p>`;
+  if(dates)h+=`<div class="hist-dates" id="histDetailDates">${esc(dates)}</div>`;
+  h+=`<button class="btn" id="btnHistSolve" onclick="startMissedOne('${esc(q.id)}')">この問題を解く</button>`;
+  h+=`<button class="btn sec" id="btnHistDetailBack" onclick="showManage(${histDetailFrom==='top'?'\'top\'':''})">履歴に戻る</button>`;
+  h+=renderQuestionReview(q,LET.slice(),null,{noPick:true});
+  h+=`</div>`;
+  app.innerHTML=h;window.scrollTo(0,0);
+}
 const PW_HASH='130322d32c42a4ed7dc84ab0eeb76edade54910d2f6ee7540af017158d562c65';
 const PW_KEY='midori_pw_ok';
 function sha256js(msg){
